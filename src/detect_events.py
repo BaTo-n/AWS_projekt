@@ -9,7 +9,7 @@ def get_latest_spark_csv(spark_output_dir):
     return csv_files[0]
 
 def main():
-    print("Uruchamianie modułu detekcji zdarzeń (System Ekspercki)...")
+    print("Uruchamianie modułu detekcji zdarzeń...")
 
     spark_input_dir = "data/processed/hourly_weather"
     output_events_path = "data/processed/events.csv"
@@ -31,46 +31,33 @@ def main():
         temp_avg = row['temp_avg']
         wind_max = row['wind_max']
         rain_sum = row['rain_sum']
+        humidity_avg = row['humidity_avg']
+        pressure_avg = row['pressure_avg']
 
         # Heavy Rain
         if rain_sum >= 10.0:
-            detected_events.append({
-                "time": hour,
-                "station_id": station_id,
-                "event": "Heavy Rain",
-                "details": f"Opady: {rain_sum} mm"
-            })
+            detected_events.append({"time": hour, "station_id": station_id, "event": "Heavy Rain", "details": f"Opady: {rain_sum} mm"})
 
         # Strong Wind
         if wind_max >= 50.0:
-            detected_events.append({
-                "time": hour,
-                "station_id": station_id,
-                "event": "Strong Wind",
-                "details": f"Wiatr: {wind_max} km/h"
-            })
+            detected_events.append({"time": hour, "station_id": station_id, "event": "Strong Wind", "details": f"Wiatr: {wind_max} km/h"})
 
-        # Heat Wave
+        # Heat Wave & Frost
         if temp_avg >= 30.0:
-            detected_events.append({
-                "time": hour,
-                "station_id": station_id,
-                "event": "Heat Wave",
-                "details": f"Temperatura: {temp_avg}°C"
-            })
-            
-        # Frost Alert
+            detected_events.append({"time": hour, "station_id": station_id, "event": "Heat Wave", "details": f"Temperatura: {temp_avg}°C"})
         if temp_avg <= 0.0:
-            detected_events.append({
-                "time": hour,
-                "station_id": station_id,
-                "event": "Frost Alert",
-                "details": f"Temperatura: {temp_avg}°C"
-            })
+            detected_events.append({"time": hour, "station_id": station_id, "event": "Frost Alert", "details": f"Temperatura: {temp_avg}°C"})
+
+        # Low Pressure (Storm Risk)
+        if pressure_avg < 1000.0:
+            detected_events.append({"time": hour, "station_id": station_id, "event": "Low Pressure / Storm Risk", "details": f"Ciśnienie: {pressure_avg} hPa"})
+
+        # High Humidity
+        if humidity_avg > 90.0:
+            detected_events.append({"time": hour, "station_id": station_id, "event": "High Humidity", "details": f"Wilgotność: {humidity_avg}%"})
 
     if detected_events:
         events_df = pd.DataFrame(detected_events)
-        
         events_df = events_df.sort_values(by="time")
         
         print("\nWykryte zdarzenia pogodowe:")
@@ -81,7 +68,6 @@ def main():
         print(f"\nOś czasu zdarzeń zapisana pomyślnie w: {output_events_path}")
     else:
         print("\nW tym dniu nie wykryto żadnych anomalii ani ważnych zdarzeń pogodowych.")
-        #zapisujemy pusty plik z nagłówkami, żeby generate_report.py się nie wywalił
         empty_df = pd.DataFrame(columns=["time", "station_id", "event", "details"])
         empty_df.to_csv(output_events_path, index=False)
 

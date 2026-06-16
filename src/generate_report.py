@@ -1,6 +1,7 @@
 import os
 import glob
 import pandas as pd
+from datetime import datetime
 
 def get_latest_spark_csv(spark_output_dir):
     csv_files = glob.glob(os.path.join(spark_output_dir, "part-*.csv"))
@@ -34,23 +35,28 @@ def main():
         temp_min = df_hourly['temp_avg'].min()
         wind_max_day = df_hourly['wind_max'].max()
         total_rain = round(df_hourly['rain_sum'].sum(), 1)
+        humidity_mean = round(df_hourly['humidity_avg'].mean(), 1)
+        pressure_mean = round(df_hourly['pressure_avg'].mean(), 1)
+        cloud_mean = round(df_hourly['cloud_avg'].mean(), 1)
     else:
         sample_date = "Nieznana data"
         station_id = "Nieznana"
         temp_mean = temp_max = temp_min = wind_max_day = total_rain = 0
+        humidity_mean = pressure_mean = cloud_mean = 0
 
     report_lines = []
     report_lines.append("==================================================")
-    report_lines.append(f" AUTOMATIC WEATHER ANALYSIS REPORT - {sample_date}")
+    report_lines.append(f" WEATHER ANALYSIS REPORT - {sample_date}")
     report_lines.append("==================================================")
     report_lines.append(f"Station ID:         {station_id}")
-    report_lines.append(f"Generated at:       2026-06-16")
+    report_lines.append(f"Generated at:       {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     report_lines.append("--------------------------------------------------")
     report_lines.append("1. DAILY METRICS SUMMARY")
     report_lines.append("--------------------------------------------------")
-    report_lines.append(f"- Average Temperature:    {temp_mean}°C")
-    report_lines.append(f"- Max Temperature:        {temp_max}°C")
-    report_lines.append(f"- Min Temperature:        {temp_min}°C")
+    report_lines.append(f"- Average Temperature:    {temp_mean}°C (Min: {temp_min}°C, Max: {temp_max}°C)")
+    report_lines.append(f"- Average Humidity:       {humidity_mean}%")
+    report_lines.append(f"- Average Pressure:       {pressure_mean} hPa")
+    report_lines.append(f"- Average Cloud Cover:    {cloud_mean}%")
     report_lines.append(f"- Max Wind Speed:         {wind_max_day} km/h")
     report_lines.append(f"- Total Daily Rainfall:   {total_rain} mm")
     report_lines.append("--------------------------------------------------")

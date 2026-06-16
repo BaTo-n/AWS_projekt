@@ -3,25 +3,25 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# ETI - Gdańsk
-LATITUDE = 54.3706448
-LONGITUDE = 18.6116557
+URL = "https://e6uw49pbah.execute-api.us-east-1.amazonaws.com/dev/weather/batch"
+TOKEN = "STUDENT TOKEN 2026"
+
+headers = {
+    "Authorization": f"Bearer {TOKEN}"
+}
+
+params = {
+    "station_id": "GDN_01",
+    "limit": 144 # doba
+}
 
 today = datetime.now().strftime("%Y-%m-%d")
-url = (
-    f"https://api.open-meteo.com/v1/forecast?"
-    f"latitude={LATITUDE}"
-    f"&longitude={LONGITUDE}"
-    f"&hourly=temperature_2m,precipitation,wind_speed_10m"
-    f"&start_date={today}"
-    f"&end_date={today}"
-)
 
-print(f"Pobieranie danych z API dla dnia: {today}...")
-response = requests.get(url)
+print(f"Pobieranie danych z GDN_01...")
+response = requests.get(URL, headers=headers, params=params)
 
 if response.status_code != 200:
-    raise Exception(f"API Error: {response.status_code}")
+    raise Exception(f"API Error: {response.status_code}\n{response.text}")
 
 weather_data = response.json()
 project_root = Path(__file__).parent.parent
@@ -34,4 +34,4 @@ filename = raw_dir / f"weather_{today}.json"
 with open(filename, "w", encoding="utf-8") as file:
     json.dump(weather_data, file, indent=4)
 
-print(f"Data saved to: {filename}")
+print(f"Dane zapisane do: {filename}")
