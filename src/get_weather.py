@@ -2,21 +2,25 @@ import requests
 import json
 from datetime import datetime
 from pathlib import Path
-from pathlib import Path
-from datetime import datetime
 
+# Współrzędne (Poznań)
+LATITUDE = 52.4064
+LONGITUDE = 16.9252
 
+# Pobieramy dzisiejszą datę w formacie YYYY-MM-DD
+today = datetime.now().strftime("%Y-%m-%d")
 
-LATITUDE = 54.3706448
-LONGITUDE = 18.6116557
-
+# Modyfikacja URL: dodajemy parametry start_date i end_date ustawione na dzisiaj
 url = (
     f"https://api.open-meteo.com/v1/forecast?"
     f"latitude={LATITUDE}"
     f"&longitude={LONGITUDE}"
     f"&hourly=temperature_2m,precipitation,wind_speed_10m"
+    f"&start_date={today}"
+    f"&end_date={today}"
 )
 
+print(f"Pobieranie danych z API dla dnia: {today}...")
 response = requests.get(url)
 
 if response.status_code != 200:
@@ -27,8 +31,6 @@ project_root = Path(__file__).parent.parent
 
 raw_dir = project_root / "data" / "raw"
 raw_dir.mkdir(parents=True, exist_ok=True)
-
-today = datetime.now().strftime("%Y-%m-%d")
 
 filename = raw_dir / f"weather_{today}.json"
 
