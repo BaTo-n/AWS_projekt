@@ -26,7 +26,6 @@ def main():
     ])
 
     print(f"Wczytywanie surowych danych z: {raw_data_path}")
-    # KLUCZOWA ZMIANA: Dodana opcja multiLine, aby poprawnie sparsować sformatowany plik JSON
     raw_df = spark.read.option("multiLine", "true").schema(api_schema).json(raw_data_path)
 
     if raw_df.rdd.isEmpty():
@@ -59,7 +58,7 @@ def main():
         .orderBy("hour")
 
     print("Podgląd przetworzonych danych:")
-    final_df.show(10, truncate=False)
+    final_df.show(5, truncate=False)
 
     print(f"Zapisywanie przetworzonych danych do: {output_data_path}")
     final_df.coalesce(1).write \

@@ -3,14 +3,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Współrzędne (Poznań)
-LATITUDE = 52.4064
-LONGITUDE = 16.9252
+# ETI - Gdańsk
+LATITUDE = 54.3706448
+LONGITUDE = 18.6116557
 
-# Pobieramy dzisiejszą datę w formacie YYYY-MM-DD
 today = datetime.now().strftime("%Y-%m-%d")
-
-# Modyfikacja URL: dodajemy parametry start_date i end_date ustawione na dzisiaj
 url = (
     f"https://api.open-meteo.com/v1/forecast?"
     f"latitude={LATITUDE}"

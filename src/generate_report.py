@@ -9,7 +9,7 @@ def get_latest_spark_csv(spark_output_dir):
     return csv_files[0]
 
 def main():
-    print("Uruchamianie modułu generowania raportu końcowego...")
+    print("Generowanie raportu końcowego...")
 
     spark_input_dir = "data/processed/hourly_weather"
     events_input_path = "data/processed/events.csv"
@@ -23,10 +23,8 @@ def main():
         df_events = pd.read_csv(events_input_path)
     except Exception as e:
         print(f"Błąd podczas ładowania danych: {e}")
-        print("Upewnij się, że uruchomiłeś wcześniejsze skrypty w kolejności.")
         return
 
-    # Jeśli baza danych nie jest pusta, zbieramy metryki
     if not df_hourly.empty:
         sample_date = df_hourly['hour'].iloc[0].split()[0]
         station_id = df_hourly['station_id'].iloc[0]
@@ -46,16 +44,15 @@ def main():
     report_lines.append(f" AUTOMATIC WEATHER ANALYSIS REPORT - {sample_date}")
     report_lines.append("==================================================")
     report_lines.append(f"Station ID:         {station_id}")
-    report_lines.append(f"Generated at:       2026-06-16 (Potok Docker)")
+    report_lines.append(f"Generated at:       2026-06-16")
     report_lines.append("--------------------------------------------------")
     report_lines.append("1. DAILY METRICS SUMMARY")
     report_lines.append("--------------------------------------------------")
-    report_lines.append(f"• Average Temperature:    {temp_mean}°C")
-    report_lines.append(f"• Max Temperature:        {temp_max}°C")
-    report_lines.append(f"• Min Temperature:        {temp_min}°C")
-    report_lines.append(f"• Max Wind Speed:         {wind_max_day} km/h")
-    report_lines.append(f"• Total Daily Rainfall:   {total_rain} mm")
-    # Usunięto linijkę z Humidity, chroniąc przed KeyError
+    report_lines.append(f"- Average Temperature:    {temp_mean}°C")
+    report_lines.append(f"- Max Temperature:        {temp_max}°C")
+    report_lines.append(f"- Min Temperature:        {temp_min}°C")
+    report_lines.append(f"- Max Wind Speed:         {wind_max_day} km/h")
+    report_lines.append(f"- Total Daily Rainfall:   {total_rain} mm")
     report_lines.append("--------------------------------------------------")
     report_lines.append("2. DETECTED WEATHER EVENTS & ANOMALIES")
     report_lines.append("--------------------------------------------------")
@@ -70,19 +67,11 @@ def main():
             time_hm = row['time'].split()[1] if " " in str(row['time']) else row['time']
             report_lines.append(f"  [{time_hm}] ALERT: {row['event']} -> {row['details']}")
 
-    report_lines.append("--------------------------------------------------")
-    report_lines.append("3. PIPELINE METADATA & STATUS")
-    report_lines.append("--------------------------------------------------")
-    report_lines.append("• Ingestion Layer:   SUCCESS (JSON format preserved)")
-    report_lines.append("• Processing Layer:  SUCCESS (Apache Spark Windowed Aggregations)")
-    report_lines.append("• Analytics Layer:   SUCCESS (Expert Rule Engine Evaluated)")
-    report_lines.append("==================================================")
-
     full_report = "\n".join(report_lines)
 
-    print("\n--- PODGLĄD GENEROWANEGO RAPORTU ---")
+    print("\n-------- RAPORT --------")
     print(full_report)
-    print("-------------------------------------\n")
+    print("------------------------------\n")
 
     with open(report_output_path, "w", encoding="utf-8") as f:
         f.write(full_report)
