@@ -34,9 +34,9 @@ def main():
         return
 
     exploded_df = raw_df.select(F.posexplode("hourly.time").alias("pos", "timestamp"), "hourly") \
-        .withColumn("temperature", F.col("hourly.temperature_2m").getItem(F.col("pos"))) \
-        .withColumn("rain_mm", F.col("hourly.precipitation").getItem(F.col("pos"))) \
-        .withColumn("wind_speed", F.col("hourly.wind_speed_10m").getItem(F.col("pos"))) \
+        .withColumn("temperature", F.col("hourly.temperature_2m")[F.col("pos")]) \
+        .withColumn("rain_mm", F.col("hourly.precipitation")[F.col("pos")]) \
+        .withColumn("wind_speed", F.col("hourly.wind_speed_10m")[F.col("pos")]) \
         .withColumn("station_id", F.lit("POZ_01"))
 
     clean_df = exploded_df.withColumn("dt", F.to_timestamp("timestamp", "yyyy-MM-dd'T'HH:mm"))
