@@ -1,89 +1,73 @@
-# System Ekspercki Analizy Pogodowej – Daily Event Timeline
-**Projekt nr 9 – Autonomous Expert Systems and Data Exploration**
+# Projekt 9 - Weather Event Timeline and Automatic Daily Report
+## Cel projektu
+Głównym celem projektu jest wygenerowanie dziennej osi czasu ważnych zdarzeń pogodowych oraz czytelnego podsumowania analitycznego w formie raportu. Zgodnie z założeniami, system pobiera dane ze współdzielonego Weather REST API, a następnie automatycznie je przetwarza, agreguje w oknach godzinowych i wykorzystuje reguły systemu eksperckiego do detekcji anomalii (np. ulewnego deszczu, silnego wiatru czy ryzyka burzy na podstawie spadku ciśnienia). Projekt udowadnia, że komponenty systemów eksperckich wspierają przepływ przetwarzania danych, a nie go zastępują.
 
-Automatyczny potok danych (Data Pipeline) oraz System Ekspercki służący do monitorowania, agregowania i wykrywania anomalii pogodowych na podstawie danych z REST API. Projekt realizuje pełną architekturę referencyjną przetwarzania Big Data: od surowej pozyskiwalności, przez okienkową agregację, aż po logikę reguł eksperckich i prezentację wyników.
 
+## Architektura systemu
+System został zaprojektowany zgodnie z założeniami potokowego przetwarzania danych i zachowuje wyraźny podział na warstwy. Opiera się na architekturze rekomendowanej w zadaniu: od kolektora REST API, przez surowy magazyn danych, czyszczenie i transformację, po analitykę opartą na regułach eksperckich i finalny raport.
+
+### Komponenty architektury
+
+
+* Warstwa Pobierania: Skrypt get_weather.py łączy się ze współdzielonym interfejsem REST API (endpoint /weather/batch dla stacji GDN_01). Pobrane, surowe pomiary są bezwzględnie utrwalane na dysku w formacie JSON w warstwie data/raw/ przed jakimkolwiek czyszczeniem.
+* Warstwa Przetwarzania: Skrypt process_weather.py odpowiada za wczytanie surowych plików JSON, transformację zagnieżdżonych struktur oraz normalizację znaczników czasu. Następnie dane są agregowane w oknach 1-godzinnych (średnia temperatura, wilgotność, suma opadów itp.) i zapisywane do formatu CSV w warstwie data/processed/. Użycie Spark SQL zapewnia skalowalność.
+* Warstwa Analityczna i Systemu Eksperckiego: Skrypt detect_events.py iteruje po zagregowanych danych i przy użyciu silnika opartego na regułach eksperckich  klasyfikuje i filtruje zdarzenia anomalne (np. wiatr >= 50 km/h, ciśnienie < 1000 hPa). Wyniki trafiają do pliku events.csv.
+* Warstwa Prezentacji: Skrypt generate_report.py konsoliduje dane godzinowe z tabelą zdarzeń, wylicza dzienne metryki (np. min/max) i generuje podsumowanie (wykres matplotlib oraz raport.txt).
+
+```text
+   [ Pobieranie Danych z API ]
+                |
+                v
+  [ Przetwarzanie i Agregacja  ]
+                |
+                v
+       [ System Ekspercki ]      
+                |
+                v 
+[ Generowanie Raportu Końcowego ]
+```
 ---
 
-## Architektura Referencyjna i Przepływ Danych (Data Lineage)
+Całość zarządzana jest z poziomu narzędzia Docker Compose, które poprzez mapowanie wolumenów dba o zachowanie plików wynikowych w systemie hosta.
 
-Projekt został zaprojektowany zgodnie z zasadą luźnego powiązania komponentów, dzieląc potok przetwarzania na 4 odseparowane warstwy funkcjonalne:
 
-[ Weather REST API ]
+### Struktura projektu
+```text
+root/
+├── data/
+│   ├── processed/
+│   │   ├── hourly_weather/        # Wynikowe pliki CSV z sesji Spark
+│   │   └── events.csv             # Oś czasu wykrytych anomalii
+│   └── raw/
+│       └── weather_*.json         # Surowe zrzuty z REST API
+├── reports/
+│   ├── daily_report.txt           # Główny raport tekstowy z metrykami
+│   └── daily_weather_chart.png    # Wykres
+├── src/
+│   ├── detect_events.py           # Silnik reguł 
+│   ├── generate_report.py         # Moduł wizualizacji i podsumowań
+│   ├── get_weather.py             # Moduł pobierania danych z API
+│   └── process_weather.py         # Skrypt PySpark
+├── docker-compose.yml
+├── Dockerfile
+├── README.md
+└── requirements.txt
+```
 
-          │
-          ▼  (Ingestion Layer)
-   get_weather.py  ──> Zapis surowego pliku do: [ data/raw/ ]
-          │
-          ▼  (Processing Layer - Apache Spark)
- process_weather.py ──> Agregacja okienkowa (1h) do: [ data/processed/hourly_weather/ ]
-          │
-          ▼  (Analytics Layer - System Ekspercki)
-  detect_events.py ──> Walidacja progów i anomalii do: [ data/processed/events.csv ]
-          │
-          ▼  (Presentation Layer)
-generate_report.py ──> Generowanie końcowego raportu w: [ reports/daily_report.txt ]
-
-1. Warstwa Ingestii (get_weather.py): Odpytuje zewnętrzne API pogodowe, pobiera zmienne środowiskowe i utrwala niezmieniony stan surowy w formacie JSON.
-2. Warstwa Przetwarzania (process_weather.py): Silnik Apache Spark (PySpark SQL) ładuje strukturę na podstawie zdefiniowanego schematu, normalizuje znaczniki czasu oraz wykonuje agregacje godzinowe za pomocą funkcji okien czasowych (F.window).
-3. Warstwa Analityczna / System Ekspercki (detect_events.py): Silnik regułowy (Rule-Engine) analizuje ustrukturyzowane dane godzinowe w poszukiwaniu anomalii i ekstremów takich jak silny wiatr, ulewy czy fale upałów.
-4. Warstwa Prezentacji (generate_report.py): Agreguje statystyki dobowe i generuje sformatowany, czytelny raport biznesowo-analityczny dla użytkownika końcowego.
-
----
-
-## Struktura Katalogów Projektu
-
-weather-emr-project/
-│
-├── run_pipeline.py          # Główny orkiestrator (uruchamia cały potok automatycznie)
-├── .gitignore               # Blokada wersjonowania danych lokalnych i śmieci systemowych
-├── README.md                # Dokumentacja techniczna projektu
-│
-├── data/                    # Magazyn danych (lokalny / emulacja AWS S3)
-│   ├── raw/                 # Nieprzetworzone pliki wejściowe JSON z API
-│   └── processed/           # Dane ustrukturyzowane po procesach Spark i Pandasa
-│       ├── hourly_weather/  # Skonsolidowane pliki CSV wygenerowane przez Sparka
-│       └── events.csv       # Oś czasu wykrytych zdarzeń przez system ekspercki
-│
-├── reports/                 # Warstwa wyjściowa
-│   └── daily_report.txt     # Gotowy raport analityczny (podsumowanie + alerty)
-│
-└── src/                     # Kod źródłowy modułów
-    ├── get_weather.py       # Pobieranie danych z API (Inżynieria danych)
-    ├── process_weather.py   # Agregacje i okna czasowe (Apache Spark)
-    ├── detect_events.py     # Detekcja anomalii i reguły (System Ekspercki)
-    └── generate_report.py   # Generowanie prezentacji wynikowej (Raport tekstowy)
-
----
-
-## Kryteria i Reguły Systemu Eksperckiego
+### Reguły Systemu Eksperckiego
 
 Moduł analityczny bazuje na predefiniowanych progach meteorologicznych identyfikujących zdarzenia krytyczne w rozdzielczości godzinowej:
-* Heavy Rain (Ulewa): Opad godzinowy wykraczający poza normę bezpieczeństwa.
-* Strong Wind (Silny Wiatr): Maksymalny poryw wiatru stanowiący zagrożenie.
-* Heat Wave (Fala Upałów): Średnia temperatura godzinowa przekraczająca próg komfortu termicznego.
-* Frost Alert (Przymrozek): Spadek temperatury poniżej zera stopni.
-
----
-
+* **Heavy Rain (Ulewa):** Opad godzinowy wykraczający poza normę bezpieczeństwa ($\ge$ 10.0 mm).
+* **Strong Wind (Silny Wiatr):** Maksymalny poryw wiatru stanowiący zagrożenie ($\ge$ 50.0 km/h).
+* **Heat Wave (Fala Upałów):** Średnia temperatura godzinowa przekraczająca próg komfortu termicznego ($\ge$ 30.0 °C).
+* **Frost Alert (Przymrozek):** Spadek temperatury poniżej lub równej zero ($\le$ 0.0 °C).
+* **Low Pressure / Storm Risk (Ryzyko Burzy):** Znaczny spadek ciśnienia atmosferycznego zwiastujący załamanie pogody (< 1000.0 hPa).
+* **High Humidity (Wysoka Wilgotność):** Ekstremalne nasycenie powietrza parą wodną obniżające komfort (> 90.0 %).
 
 ## Instrukcja Uruchomienia
 
-Aby uruchomić cały potok przetwarzania danych automatycznie (od pobrania danych po końcowy raport), użyj przygotowanego skryptu orkiestracji znajdującego się w folderze głównym:
+Projekt został skonteneryzowany, co oznacza, że jego uruchomienie sprowadza się do kilku prostych poleceń. Oczywiście oznacza to, że wymagane jest posiadanie Docker'a.
 
-python run_pipeline.py
-
-Ręczne uruchamianie krok po kroku:
-Jeżeli chcesz debugować poszczególne warstwy niezależnie, zachowaj poniższą kolejność:
-python src/get_weather.py
-python src/process_weather.py
-python src/detect_events.py
-python src/generate_report.py
-
----
-
-## Założenia, Ograniczenia i Rozwój (AWS EMR/S3 Context)
-
-* Architektura chmurowa: Kody źródłowe zostały przygotowane w sposób umożliwiający bezpośrednią migrację na platformę chmurową AWS. W środowisku docelowym ścieżki lokalne data/raw/ oraz data/processed/ zostaną zamienione na adresy zasobów w AWS S3 (np. s3://bucket-pogodowy/raw/).
-* Skalowanie: Wykorzystanie czystego PySpark SQL w process_weather.py gwarantuje, że skrypt uruchomiony na klastrze maszyn AWS EMR (np. na bezpiecznych pod kątem kompatybilności instancjach opartych na architekturze Intel/AMD, takich jak r6i.xlarge lub r5.xlarge) bez żadnych modyfikacji kodu obsłuży duże wolumeny danych historycznych dla wielu stacji jednocześnie.
-* Ograniczenia: Obecna wersja systemu eksperckiego działa w oparciu o statyczne progi regułowe. Przyszłym krokiem rozwoju jest wdrożenie zaawansowanych modeli uczenia maszynowego (np. z biblioteki SparkML) w celu dynamicznego wyznaczania anomalii relatywnie do trendów długoterminowych.
+* Ze względów bezpieczeństwa token do API nie został udostępniony w kodzie. Najpierw należy podmienić token z src/get_weather.py na poprawny.
+* Teraz wystarczy z perspektywy katalogu projektu użyć polecenia `docker compose up --build`, zbuduje ono obraz systemu i automatycznie go odpali.
+* Jeśli obraz zostanie już zbudowany z każdym kolejnym razem wystarczy użyć `docker compose up`.
