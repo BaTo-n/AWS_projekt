@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 URL = "https://e6uw49pbah.execute-api.us-east-1.amazonaws.com/dev/weather/batch"
-TOKEN = "STUDENT TOKEN 2026"
+TOKEN = "STUDENT_TOKEN_2026"
 
 headers = {
     "Authorization": f"Bearer {TOKEN}"
