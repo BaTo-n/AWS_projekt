@@ -7,8 +7,8 @@ from datetime import datetime
 
 
 
-LATITUDE = 52.4064
-LONGITUDE = 16.9252
+LATITUDE = 54.3706448
+LONGITUDE = 18.6116557
 
 url = (
     f"https://api.open-meteo.com/v1/forecast?"
