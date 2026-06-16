@@ -1,0 +1,17 @@
+services:
+  weather_agent:
+    build: .
+    container_name: weather_pipeline_p9
+    volumes:
+      # Mapowanie lokalnych katalogów do wnętrza kontenera
+      - ./data:/app/data
+      - ./reports:/app/reports
+    networks:
+      - weather_net
+    environment:
+      # Przydatne w logowaniu Dockera, żeby logi pojawiały się natychmiast
+      - PYTHONUNBUFFERED=1
+
+networks:
+  weather_net:
+    driver: bridge

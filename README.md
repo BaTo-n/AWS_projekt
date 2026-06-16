@@ -10,6 +10,7 @@ Automatyczny potok danych (Data Pipeline) oraz System Ekspercki służący do mo
 Projekt został zaprojektowany zgodnie z zasadą luźnego powiązania komponentów, dzieląc potok przetwarzania na 4 odseparowane warstwy funkcjonalne:
 
 [ Weather REST API ]
+
           │
           ▼  (Ingestion Layer)
    get_weather.py  ──> Zapis surowego pliku do: [ data/raw/ ]
@@ -65,17 +66,6 @@ Moduł analityczny bazuje na predefiniowanych progach meteorologicznych identyfi
 
 ---
 
-## Wymagania Środowiskowe i Instalacja
-
-Wymagania Lokalne (Przed migracją na AWS EMR):
-1. Python 3.9+
-2. Java JDK 11 lub 17 (Wymagana do poprawnego działania silnika Apache Spark lokalnie). Zmienna środowiskowa JAVA_HOME musi wskazywać na katalog instalacyjny JDK.
-
-Instalacja bibliotek:
-Wewnątrz swojego środowiska wirtualnego (venv) zainstaluj wymagane pakiety:
-pip install pyspark pandas requests
-
----
 
 ## Instrukcja Uruchomienia
 
