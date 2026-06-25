@@ -5,6 +5,7 @@ from datetime import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 def get_latest_spark_csv(spark_output_dir):
     csv_files = glob.glob(os.path.join(spark_output_dir, "part-*.csv"))
@@ -97,7 +98,6 @@ def main():
     ax3_twin.set_ylabel('Wiatr (km/h)', color='purple')
     ax3_twin.tick_params(axis='y', labelcolor='purple')
 
-    import matplotlib.dates as mdates
     ax3.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     plt.xticks(rotation=45)
     
